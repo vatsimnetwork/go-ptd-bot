@@ -2,57 +2,104 @@ package functions
 
 import (
 	"context"
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/carlmjohnson/requests"
-	"log"
+	"github.com/getsentry/sentry-go"
+	"ptd-discord-bot/internal/config"
 )
 
-type discordUser struct {
+type CidResponse struct {
 	Id     string `json:"id"`
 	UserId string `json:"user_id"`
 }
 
-type vatsimUser struct {
-	Id             int `json:"id"`
-	Rating         int `json:"rating"`
-	PilotRating    int `json:"pilotrating"`
-	MilitaryRating int `json:"militaryrating"`
+type V2Response struct {
+	Rating      int `json:"rating"`
+	PilotRating int `json:"pilotrating"`
 }
 
-func ProcessMember(m *discordgo.Member) {
+func getCID(m *discordgo.User) (*CidResponse, error) {
 
-	ManagedRoles := [14]string{"Supervisor", "Administrator", "New Member", "PPL", "IR", "CMEL", "ATPL", "Flight Instructor", "Flight Examiner", "No Military Rating", "M1", "M2", "M3", "M4"}
-
-	var user discordUser
-	url := fmt.Sprintf("https://api.vatsim.net/v2/members/discord/%v", m.User.ID)
+	var CID *CidResponse
 	err := requests.
-		URL(url).
-		Header("User-Agent", "PTDDiscordBotv2").
-		ToJSON(&user).
+		URL("https://api.vatsim.net").
+		Pathf("/v2/members/discord/%s", m.ID).
+		CheckStatus(200).
+		ToJSON(&CID).
+		Fetch(context.Background())
+
+	if requests.HasStatusErr(err, 404) {
+		return nil, err
+	} else if err != nil {
+		sentry.CaptureException(err)
+		return nil, err
+	}
+	return CID, nil
+}
+
+func getRatings(u *discordgo.User) (*V2Response, error) {
+	var RatingsResponse *V2Response
+
+	m, err := getCID(u)
+	if m == nil || err != nil {
+		return nil, err
+	}
+
+	err = requests.
+		URL("https://api.vatsim.net").
+		Pathf("/v2/members/%s", m.UserId).
+		ToJSON(&RatingsResponse).
+		CheckStatus(200).
 		Fetch(context.Background())
 
 	if err != nil {
-		log.Println(err)
+		sentry.CaptureException(err)
+		return nil, err
+	}
+	return RatingsResponse, nil
+
+}
+
+func ProcessMember(s *discordgo.Session, m *discordgo.User) {
+	mem, err := getRatings(m)
+	if mem == nil || err != nil {
+		sentry.CaptureException(err)
 		return
 	}
 
-	var VatsimUser vatsimUser
-	memberUrl := fmt.Sprintf("https://api.vatsim.net/v2/members/%v", user.UserId)
-	errr := requests.
-		URL(memberUrl).
-		Header("User-Agent", "PTDDiscordBotv2").
-		ToJSON(&VatsimUser).
-		Fetch(context.Background())
+	ratingRoles := config.GetRatingsRoles()
+	pilotRatingRoles := config.GetPilotRatingRoles()
 
-	if errr != nil {
-		log.Println(errr)
-		return
+	//var rolesEmbed []string
+	newRoles := new([]string)
+	CurrentRoles := make(map[string]string)
+
+	for _, v := range ratingRoles.Ratings {
+		if CurrentRoles[v.DisocrdRoleId] == v.DisocrdRoleId {
+			delete(CurrentRoles, v.DisocrdRoleId)
+		}
+		if mem.Rating == v.CertValue {
+			CurrentRoles[v.DisocrdRoleId] = v.DisocrdRoleId
+		}
+	}
+	for _, v := range pilotRatingRoles.Ratings {
+		if CurrentRoles[v.DisocrdRoleId] == v.DisocrdRoleId {
+			delete(CurrentRoles, v.DisocrdRoleId)
+		}
+		if mem.PilotRating == v.CertValue {
+			CurrentRoles[v.DisocrdRoleId] = v.DisocrdRoleId
+		}
 	}
 
-	var roles []string
+	for k := range CurrentRoles {
+		*newRoles = append(*newRoles, k)
+	}
 
-	switch {
-
+	_, err = s.GuildMemberEdit("1037908270737784872", m.ID, &discordgo.GuildMemberParams{
+		Roles: newRoles,
+	})
+	if err != nil {
+		sentry.CaptureException(err)
+		return
 	}
 }
