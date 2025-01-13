@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"ptd-discord-bot/commands"
+	"ptd-discord-bot/commands/roles"
 	"ptd-discord-bot/functions"
 	"ptd-discord-bot/internal/config"
 )
@@ -19,32 +21,52 @@ func Session() (*discordgo.Session, error) {
 
 func Run() {
 	log.Print("Starting discord-bot-v2")
-	session, err := Session()
+	s, err := Session()
 	if err != nil {
 		println(err.Error())
 	}
-	session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
+	s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
-	AddMemberHandlers(session)
+	AddMemberHandlers(s)
 
-	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+	s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		go IntervalRefreshAll(s)
 		go config.IntervalReloadConfigs()
 		s.UpdateWatchStatus(0, "The VATSIM Network")
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})
 
-	session.AddHandler(func(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
+	s.AddHandler(func(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		go functions.ProcessMember(s, e.GuildID, e.Member)
 	})
 
-	err = session.Open()
+	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		var GuildCommandHandler = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+			"member-roles": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+				roles.HandleMemberRoles(s, i)
+			},
+		}
+		if h, ok := GuildCommandHandler[i.ApplicationCommandData().Name]; ok {
+			h(s, i)
+		}
+	})
+
+	err = s.Open()
 	if err != nil {
 		println(err.Error())
 		panic(err.Error())
 
 	}
-	defer session.Close()
+	log.Println("Adding commands...")
+	registeredGuildCommands := make([]*discordgo.ApplicationCommand, len(commands.GuildCommands))
+	for i, v := range commands.GuildCommands {
+		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, "", v)
+		if err != nil {
+			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+		}
+		registeredGuildCommands[i] = cmd
+	}
+	defer s.Close()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
