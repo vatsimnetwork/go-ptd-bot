@@ -35,6 +35,8 @@ func Run() {
 	err = session.Open()
 	if err != nil {
 		println(err.Error())
+		panic(err.Error())
+
 	}
 	defer session.Close()
 
