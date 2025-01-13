@@ -2,7 +2,6 @@ package functions
 
 import (
 	"context"
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/carlmjohnson/requests"
 	"github.com/getsentry/sentry-go"
@@ -106,8 +105,6 @@ func ProcessMember(s *discordgo.Session, g string, m *discordgo.User) {
 	}
 
 	eqcheck := reflect.DeepEqual(CurrentRoles, UpdatedRoles)
-
-	fmt.Println(eqcheck)
 
 	if !eqcheck {
 		_, err = s.GuildMemberEdit(g, m.ID, &discordgo.GuildMemberParams{
