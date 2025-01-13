@@ -34,7 +34,7 @@ func Run() {
 	})
 
 	session.AddHandler(func(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
-		go functions.ProcessMember(s, e.GuildID, e.User)
+		go functions.ProcessMember(s, e.GuildID, e.Member)
 	})
 
 	err = session.Open()

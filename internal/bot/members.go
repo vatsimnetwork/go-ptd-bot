@@ -21,6 +21,6 @@ func ProcessAllGuilds(s *discordgo.Session) {
 
 func ProcessGuildMemberChunks(s *discordgo.Session, mc *discordgo.GuildMembersChunk) {
 	for _, member := range mc.Members {
-		go functions.ProcessMember(s, mc.GuildID, member.User)
+		go functions.ProcessMember(s, mc.GuildID, member)
 	}
 }

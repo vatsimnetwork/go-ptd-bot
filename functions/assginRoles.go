@@ -61,8 +61,8 @@ func getRatings(u *discordgo.User) (*V2Response, error) {
 
 }
 
-func ProcessMember(s *discordgo.Session, g string, m *discordgo.User) {
-	mem, err := getRatings(m)
+func ProcessMember(s *discordgo.Session, g string, m *discordgo.Member) {
+	mem, err := getRatings(m.User)
 	if mem == nil || err != nil {
 		sentry.CaptureException(err)
 		return
@@ -76,9 +76,7 @@ func ProcessMember(s *discordgo.Session, g string, m *discordgo.User) {
 	CurrentRoles := make(map[string]string)
 	UpdatedRoles := make(map[string]string)
 
-	mr, _ := s.GuildMember(g, m.ID)
-
-	for _, v := range mr.Roles {
+	for _, v := range m.Roles {
 		CurrentRoles[v] = v
 		UpdatedRoles[v] = v
 	}
@@ -107,7 +105,7 @@ func ProcessMember(s *discordgo.Session, g string, m *discordgo.User) {
 	eqcheck := reflect.DeepEqual(CurrentRoles, UpdatedRoles)
 
 	if !eqcheck {
-		_, err = s.GuildMemberEdit(g, m.ID, &discordgo.GuildMemberParams{
+		_, err = s.GuildMemberEdit(g, m.User.ID, &discordgo.GuildMemberParams{
 			Roles: newRoles,
 		})
 	}
