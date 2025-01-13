@@ -15,8 +15,9 @@ type CidResponse struct {
 }
 
 type V2Response struct {
-	Rating      int `json:"rating"`
-	PilotRating int `json:"pilotrating"`
+	Rating         int `json:"rating"`
+	PilotRating    int `json:"pilotrating"`
+	MilitaryRating int `json:"militaryrating"`
 }
 
 func getCID(m *discordgo.User) (*CidResponse, error) {
@@ -68,8 +69,9 @@ func ProcessMember(s *discordgo.Session, g string, m *discordgo.Member) {
 		return
 	}
 
-	ratingRoles := config.GetRatingsRoles()
-	pilotRatingRoles := config.GetPilotRatingRoles()
+	ratingRoles := config.GetRatingsRoles(g)
+	pilotRatingRoles := config.GetPilotRatingRoles(g)
+	militaryRatingRoles := config.GetMilitaryRatingRoles(g)
 
 	//var rolesEmbed []string
 	newRoles := new([]string)
@@ -81,20 +83,28 @@ func ProcessMember(s *discordgo.Session, g string, m *discordgo.Member) {
 		UpdatedRoles[v] = v
 	}
 
-	for _, v := range ratingRoles.Ratings {
-		if CurrentRoles[v.DisocrdRoleId] == v.DisocrdRoleId {
-			delete(UpdatedRoles, v.DisocrdRoleId)
+	for _, v := range ratingRoles {
+		if CurrentRoles[v.DiscordRoleId] == v.DiscordRoleId {
+			delete(UpdatedRoles, v.DiscordRoleId)
 		}
 		if mem.Rating == v.CertValue {
-			UpdatedRoles[v.DisocrdRoleId] = v.DisocrdRoleId
+			UpdatedRoles[v.DiscordRoleId] = v.DiscordRoleId
 		}
 	}
-	for _, v := range pilotRatingRoles.Ratings {
-		if CurrentRoles[v.DisocrdRoleId] == v.DisocrdRoleId {
-			delete(UpdatedRoles, v.DisocrdRoleId)
+	for _, v := range pilotRatingRoles {
+		if CurrentRoles[v.DiscordRoleId] == v.DiscordRoleId {
+			delete(UpdatedRoles, v.DiscordRoleId)
 		}
 		if mem.PilotRating == v.CertValue {
-			UpdatedRoles[v.DisocrdRoleId] = v.DisocrdRoleId
+			UpdatedRoles[v.DiscordRoleId] = v.DiscordRoleId
+		}
+	}
+	for _, v := range militaryRatingRoles {
+		if CurrentRoles[v.DiscordRoleId] == v.DiscordRoleId {
+			delete(UpdatedRoles, v.DiscordRoleId)
+		}
+		if mem.MilitaryRating == v.CertValue {
+			UpdatedRoles[v.DiscordRoleId] = v.DiscordRoleId
 		}
 	}
 

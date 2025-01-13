@@ -1,0 +1,47 @@
+name: Test Sevver
+id: 901078003482783765
+rating_roles:
+  - name: SUP
+    id: 1012606393200672778
+    cert_value: 11
+  - name: ADM
+    id: 1038895155425587311
+    cert_value: 12
+pilot_rating_roles:
+  - name: P0
+    id: 1038895348476805221
+    cert_value: 0
+  - name: P1
+    id: 1038895400255504455
+    cert_value: 1
+  - name: P2
+    id: 1038895465774723183
+    cert_value: 3
+  - name: P3
+    id: 1038895520254533672
+    cert_value: 7
+  - name: P4
+    id: 1038895579851403295
+    cert_value: 15
+  - name: P5
+    id: 1104633913877479494
+    cert_value: 31
+  - name: P6
+    id: 1011100640845508699
+    cert_value: 63
+military_rating_roles:
+  - name: M0
+    id: 1104939230406377482
+    cert_value: 0
+  - name: M1
+    id: 1104939300929421373
+    cert_value: 1
+  - name: M2
+    id: 1104939475638943795
+    cert_value: 3
+  - name: M3
+    id: 1104939531377049690
+    cert_value: 7
+  - name: M4
+    id: 1104939325365420122
+    cert_value: 15

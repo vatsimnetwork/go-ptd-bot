@@ -29,6 +29,7 @@ func Run() {
 
 	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		go IntervalRefreshAll(s)
+		go config.IntervalReloadConfigs()
 		s.UpdateWatchStatus(0, "The VATSIM Network")
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})

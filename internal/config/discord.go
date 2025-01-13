@@ -1,76 +1,98 @@
 package config
 
-import "os"
+import (
+	"errors"
+	"fmt"
+	"gopkg.in/yaml.v3"
+	"log"
+	"os"
+	"time"
+)
 import _ "github.com/joho/godotenv/autoload"
 
-type Rating struct {
-	ShortName     string
-	CertValue     int
-	DisocrdRoleId string
+type ServerConfig struct {
+	Id                  string             `yaml:"id"`
+	Name                string             `yaml:"name"`
+	RatingRoles         []RatingRoleConfig `yaml:"rating_roles"`
+	PilotRatingRoles    []RatingRoleConfig `yaml:"pilot_rating_roles"`
+	MilitaryRatingRoles []RatingRoleConfig `yaml:"military_rating_roles"`
 }
-
-type Ratings struct {
-	Ratings []Rating
+type RatingRoleConfig struct {
+	ShortName     string `yaml:"name"`
+	DiscordRoleId string `yaml:"id"`
+	CertValue     int    `yaml:"cert_value"`
 }
 
 var DiscordToken = os.Getenv("DISCORD_TOKEN")
+var SentryDSN = os.Getenv("SENTRY_DSN")
+var Env = os.Getenv("GO_ENV")
+var ConfigPath = os.Getenv("CONFIG_PATH")
 
-func GetRatingsRoles() Ratings {
+func LoadAllServerConfigOrPanic(configPath string) map[string]ServerConfig {
+	cfgs, err := LoadAllServerConfig(configPath)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+	return cfgs
+}
 
-	return Ratings{
-		Ratings: []Rating{
-			{
-				ShortName:     "ADM",
-				CertValue:     12,
-				DisocrdRoleId: "1037910657779126292",
-			},
-			{
-				ShortName:     "SUP",
-				CertValue:     11,
-				DisocrdRoleId: "1037908270758768651",
-			},
-		},
+func LoadAllServerConfig(configPath string) (map[string]ServerConfig, error) {
+	cfgs := make(map[string]ServerConfig, 0)
+	files, err := os.ReadDir(configPath)
+	if err != nil {
+		return nil, errors.New("failed to load server configs")
+	}
+	for _, f := range files {
+		if !f.IsDir() {
+			cfg, err := LoadServerConfig(fmt.Sprintf("%s/%s", configPath, f.Name()))
+			if err != nil {
+				log.Printf(err.Error())
+				return nil, nil
+			}
+			cfgs[cfg.Id] = *cfg
+		}
+	}
+	return cfgs, nil
+}
+
+func LoadServerConfig(configPath string) (*ServerConfig, error) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+	var cfg ServerConfig
+	err = yaml.Unmarshal(data, &cfg)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Validate that roles aren't duplicated
+	// TODO: Validate role criteria
+	log.Printf("Loaded Config for %s (%s)\n", cfg.Name, cfg.Id)
+	return &cfg, nil
+}
+
+var configs = LoadAllServerConfigOrPanic(ConfigPath)
+
+func IntervalReloadConfigs() {
+	for {
+		time.Sleep(5 * time.Minute)
+		log.Print("Reloading server configs")
+		configs = LoadAllServerConfigOrPanic(ConfigPath)
 	}
 }
 
-func GetPilotRatingRoles() Ratings {
-	return Ratings{
-		Ratings: []Rating{
-			{
-				ShortName:     "P0",
-				CertValue:     0,
-				DisocrdRoleId: "1037910884590301226",
-			},
-			{
-				ShortName:     "P1",
-				CertValue:     1,
-				DisocrdRoleId: "1037910919528841257",
-			},
-			{
-				ShortName:     "P2",
-				CertValue:     3,
-				DisocrdRoleId: "1037911208650608670",
-			},
-			{
-				ShortName:     "P3",
-				CertValue:     7,
-				DisocrdRoleId: "1037911259150032987",
-			},
-			{
-				ShortName:     "P4",
-				CertValue:     15,
-				DisocrdRoleId: "1037914612407992330",
-			},
-			{
-				ShortName:     "P5",
-				CertValue:     31,
-				DisocrdRoleId: "1220953753105203291",
-			},
-			{
-				ShortName:     "P6",
-				CertValue:     63,
-				DisocrdRoleId: "1037908270758768658",
-			},
-		},
-	}
+func GetRatingsRoles(id string) []RatingRoleConfig {
+
+	Cfg, _ := configs[id]
+	return Cfg.RatingRoles
+}
+
+func GetPilotRatingRoles(id string) []RatingRoleConfig {
+	Cfg, _ := configs[id]
+	return Cfg.PilotRatingRoles
+}
+
+func GetMilitaryRatingRoles(id string) []RatingRoleConfig {
+	Cfg, _ := configs[id]
+	return Cfg.MilitaryRatingRoles
 }
