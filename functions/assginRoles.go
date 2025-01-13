@@ -6,6 +6,7 @@ import (
 	"github.com/carlmjohnson/requests"
 	"github.com/getsentry/sentry-go"
 	"ptd-discord-bot/internal/config"
+	"reflect"
 )
 
 type CidResponse struct {
@@ -60,7 +61,7 @@ func getRatings(u *discordgo.User) (*V2Response, error) {
 
 }
 
-func ProcessMember(s *discordgo.Session, m *discordgo.User) {
+func ProcessMember(s *discordgo.Session, g string, m *discordgo.User) {
 	mem, err := getRatings(m)
 	if mem == nil || err != nil {
 		sentry.CaptureException(err)
@@ -95,9 +96,16 @@ func ProcessMember(s *discordgo.Session, m *discordgo.User) {
 		*newRoles = append(*newRoles, k)
 	}
 
-	_, err = s.GuildMemberEdit("1037908270737784872", m.ID, &discordgo.GuildMemberParams{
-		Roles: newRoles,
-	})
+	eqcheck := reflect.DeepEqual(CurrentRoles, newRoles)
+
+	if eqcheck {
+		return
+	} else {
+		_, err = s.GuildMemberEdit(g, m.ID, &discordgo.GuildMemberParams{
+			Roles: newRoles,
+		})
+	}
+
 	if err != nil {
 		sentry.CaptureException(err)
 		return
