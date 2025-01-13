@@ -2,6 +2,7 @@ package functions
 
 import (
 	"context"
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/carlmjohnson/requests"
 	"github.com/getsentry/sentry-go"
@@ -74,33 +75,41 @@ func ProcessMember(s *discordgo.Session, g string, m *discordgo.User) {
 	//var rolesEmbed []string
 	newRoles := new([]string)
 	CurrentRoles := make(map[string]string)
+	UpdatedRoles := make(map[string]string)
+
+	mr, _ := s.GuildMember(g, m.ID)
+
+	for _, v := range mr.Roles {
+		CurrentRoles[v] = v
+		UpdatedRoles[v] = v
+	}
 
 	for _, v := range ratingRoles.Ratings {
 		if CurrentRoles[v.DisocrdRoleId] == v.DisocrdRoleId {
-			delete(CurrentRoles, v.DisocrdRoleId)
+			delete(UpdatedRoles, v.DisocrdRoleId)
 		}
 		if mem.Rating == v.CertValue {
-			CurrentRoles[v.DisocrdRoleId] = v.DisocrdRoleId
+			UpdatedRoles[v.DisocrdRoleId] = v.DisocrdRoleId
 		}
 	}
 	for _, v := range pilotRatingRoles.Ratings {
 		if CurrentRoles[v.DisocrdRoleId] == v.DisocrdRoleId {
-			delete(CurrentRoles, v.DisocrdRoleId)
+			delete(UpdatedRoles, v.DisocrdRoleId)
 		}
 		if mem.PilotRating == v.CertValue {
-			CurrentRoles[v.DisocrdRoleId] = v.DisocrdRoleId
+			UpdatedRoles[v.DisocrdRoleId] = v.DisocrdRoleId
 		}
 	}
 
-	for k := range CurrentRoles {
+	for k := range UpdatedRoles {
 		*newRoles = append(*newRoles, k)
 	}
 
-	eqcheck := reflect.DeepEqual(CurrentRoles, newRoles)
+	eqcheck := reflect.DeepEqual(CurrentRoles, UpdatedRoles)
 
-	if eqcheck {
-		return
-	} else {
+	fmt.Println(eqcheck)
+
+	if !eqcheck {
 		_, err = s.GuildMemberEdit(g, m.ID, &discordgo.GuildMemberParams{
 			Roles: newRoles,
 		})
