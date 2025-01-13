@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"ptd-discord-bot/functions"
 	"ptd-discord-bot/internal/config"
 )
 
@@ -30,6 +31,10 @@ func Run() {
 		go IntervalRefreshAll(s)
 		s.UpdateWatchStatus(0, "The VATSIM Network")
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
+	})
+
+	session.AddHandler(func(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
+		go functions.ProcessMember(s, e.GuildID, e.User)
 	})
 
 	err = session.Open()
