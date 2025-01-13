@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	GuildCommands = []*discordgo.ApplicationCommand{
+	AdminPermissions int64 = discordgo.PermissionAdministrator
+	GuildCommands          = []*discordgo.ApplicationCommand{
 		{
 			Name:        "member-roles",
 			Description: "Assigns a members roles",
@@ -17,6 +18,7 @@ var (
 					Required:    true,
 				},
 			},
+			DefaultMemberPermissions: &AdminPermissions,
 		},
 	}
 )
