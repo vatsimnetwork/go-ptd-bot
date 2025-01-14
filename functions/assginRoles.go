@@ -64,7 +64,9 @@ func getRatings(u *discordgo.User) (*V2Response, error) {
 
 func ProcessMember(s *discordgo.Session, g string, m *discordgo.Member) {
 	mem, err := getRatings(m.User)
-	if mem == nil || err != nil {
+	if mem == nil {
+		return
+	} else if err != nil {
 		sentry.CaptureException(err)
 		return
 	}
@@ -118,10 +120,8 @@ func ProcessMember(s *discordgo.Session, g string, m *discordgo.Member) {
 		_, err = s.GuildMemberEdit(g, m.User.ID, &discordgo.GuildMemberParams{
 			Roles: newRoles,
 		})
-	}
-
-	if err != nil {
-		sentry.CaptureException(err)
-		return
+		if err != nil {
+			sentry.CaptureException(err)
+		}
 	}
 }

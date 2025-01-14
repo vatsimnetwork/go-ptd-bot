@@ -2,6 +2,7 @@ package bot
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/getsentry/sentry-go"
 	"log"
 	"os"
 	"os/signal"
@@ -23,7 +24,9 @@ func Run() {
 	log.Print("Starting discord-bot-v2")
 	s, err := Session()
 	if err != nil {
-		println(err.Error())
+		sentry.CaptureException(err)
+		log.Fatal(err)
+		panic(err.Error())
 	}
 	s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
@@ -32,7 +35,10 @@ func Run() {
 	s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		go IntervalRefreshAll(s)
 		go config.IntervalReloadConfigs()
-		s.UpdateWatchStatus(0, "The VATSIM Network")
+		err := s.UpdateWatchStatus(0, "The VATSIM Network")
+		if err != nil {
+			sentry.CaptureException(err)
+		}
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})
 

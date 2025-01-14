@@ -2,6 +2,7 @@ package roles
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/getsentry/sentry-go"
 	"ptd-discord-bot/functions"
 )
 
@@ -15,11 +16,14 @@ func HandleMemberRoles(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	go functions.ProcessMember(s, i.GuildID, member)
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "Roles Assigned!",
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
+	if err != nil {
+		sentry.CaptureException(err)
+	}
 }

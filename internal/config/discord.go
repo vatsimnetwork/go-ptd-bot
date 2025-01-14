@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/getsentry/sentry-go"
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
@@ -58,11 +59,13 @@ func LoadAllServerConfig(configPath string) (map[string]ServerConfig, error) {
 func LoadServerConfig(configPath string) (*ServerConfig, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
+		sentry.CaptureException(err)
 		return nil, err
 	}
 	var cfg ServerConfig
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
+		sentry.CaptureException(err)
 		return nil, err
 	}
 	// TODO: Validate that roles aren't duplicated
