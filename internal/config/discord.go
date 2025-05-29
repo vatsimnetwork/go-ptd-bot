@@ -3,74 +3,83 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/getsentry/sentry-go"
-	"gopkg.in/yaml.v3"
 	"log"
 	"os"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	_ "github.com/joho/godotenv/autoload"
+	"gopkg.in/yaml.v3"
 )
-import _ "github.com/joho/godotenv/autoload"
 
 type ServerConfig struct {
-	Id                  string             `yaml:"id"`
+	ID                  string             `yaml:"id"`
 	Name                string             `yaml:"name"`
 	RatingRoles         []RatingRoleConfig `yaml:"rating_roles"`
 	PilotRatingRoles    []RatingRoleConfig `yaml:"pilot_rating_roles"`
 	MilitaryRatingRoles []RatingRoleConfig `yaml:"military_rating_roles"`
 }
+
 type RatingRoleConfig struct {
-	ShortName     string `yaml:"name"`
-	DiscordRoleId string `yaml:"id"`
-	CertValue     int    `yaml:"cert_value"`
+	ShortName string `yaml:"name"`
+	RoleID    string `yaml:"id"`
+	CertValue int    `yaml:"cert_value"`
 }
 
-var DiscordToken = os.Getenv("DISCORD_TOKEN")
-var SentryDSN = os.Getenv("SENTRY_DSN")
-var Env = os.Getenv("GO_ENV")
-var ConfigPath = os.Getenv("CONFIG_PATH")
+var (
+	ConfigPath   = os.Getenv("CONFIG_PATH")
+	DiscordToken = os.Getenv("DISCORD_TOKEN")
+	Env          = os.Getenv("GO_ENV")
+	SentryDSN    = os.Getenv("SENTRY_DSN")
+)
 
 func LoadAllServerConfigOrPanic(configPath string) map[string]ServerConfig {
 	cfgs, err := LoadAllServerConfig(configPath)
 	if err != nil {
 		log.Printf(err.Error())
 	}
+
 	return cfgs
 }
 
 func LoadAllServerConfig(configPath string) (map[string]ServerConfig, error) {
-	cfgs := make(map[string]ServerConfig, 0)
 	files, err := os.ReadDir(configPath)
 	if err != nil {
 		return nil, errors.New("failed to load server configs")
 	}
+
+	cfgs := make(map[string]ServerConfig, len(files))
 	for _, f := range files {
 		if !f.IsDir() {
 			cfg, err := LoadServerConfig(fmt.Sprintf("%s/%s", configPath, f.Name()))
 			if err != nil {
-				log.Printf(err.Error())
-				return nil, nil
+				sentry.CaptureException(err)
+				log.Printf("failed to load config for %s: %v", f.Name(), err)
+				continue
 			}
-			cfgs[cfg.Id] = *cfg
+			cfgs[cfg.ID] = *cfg
 		}
 	}
+
 	return cfgs, nil
 }
 
 func LoadServerConfig(configPath string) (*ServerConfig, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		sentry.CaptureException(err)
 		return nil, err
 	}
+
 	var cfg ServerConfig
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
-		sentry.CaptureException(err)
 		return nil, err
 	}
+
 	// TODO: Validate that roles aren't duplicated
 	// TODO: Validate role criteria
-	log.Printf("Loaded Config for %s (%s)\n", cfg.Name, cfg.Id)
+	log.Printf("Loaded Config for %s (%s)\n", cfg.Name, cfg.ID)
+
 	return &cfg, nil
 }
 
@@ -85,17 +94,16 @@ func IntervalReloadConfigs() {
 }
 
 func GetRatingsRoles(id string) []RatingRoleConfig {
-
-	Cfg, _ := configs[id]
-	return Cfg.RatingRoles
+	cfg, _ := configs[id]
+	return cfg.RatingRoles
 }
 
 func GetPilotRatingRoles(id string) []RatingRoleConfig {
-	Cfg, _ := configs[id]
-	return Cfg.PilotRatingRoles
+	cfg, _ := configs[id]
+	return cfg.PilotRatingRoles
 }
 
 func GetMilitaryRatingRoles(id string) []RatingRoleConfig {
-	Cfg, _ := configs[id]
-	return Cfg.MilitaryRatingRoles
+	cfg, _ := configs[id]
+	return cfg.MilitaryRatingRoles
 }

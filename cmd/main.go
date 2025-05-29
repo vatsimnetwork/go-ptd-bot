@@ -1,15 +1,18 @@
 package main
 
 import (
-	"github.com/getsentry/sentry-go"
 	"log"
-	"ptd-discord-bot/internal/bot"
-	"ptd-discord-bot/internal/config"
 	"time"
+
+	"github.com/vatsimnetwork/go-ptd-bot/internal/bot"
+	"github.com/vatsimnetwork/go-ptd-bot/internal/config"
+
+	"github.com/getsentry/sentry-go"
 )
 
 func main() {
 	bot.Run()
+
 	if config.Env == "production" {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn:         config.SentryDSN,

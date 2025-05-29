@@ -1,15 +1,16 @@
 package bot
 
 import (
-	"github.com/bwmarrin/discordgo"
-	"github.com/getsentry/sentry-go"
 	"log"
 	"os"
 	"os/signal"
-	"ptd-discord-bot/commands"
-	"ptd-discord-bot/commands/roles"
-	"ptd-discord-bot/functions"
-	"ptd-discord-bot/internal/config"
+
+	"github.com/vatsimnetwork/go-ptd-bot/commands"
+	"github.com/vatsimnetwork/go-ptd-bot/internal/config"
+	"github.com/vatsimnetwork/go-ptd-bot/internal/util"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/getsentry/sentry-go"
 )
 
 func Session() (*discordgo.Session, error) {
@@ -17,6 +18,7 @@ func Session() (*discordgo.Session, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return discord, nil
 }
 
@@ -25,8 +27,7 @@ func Run() {
 	s, err := Session()
 	if err != nil {
 		sentry.CaptureException(err)
-		log.Fatal(err)
-		panic(err.Error())
+		log.Fatalf("failed to create discord session: %v", err)
 	}
 	s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
@@ -43,36 +44,34 @@ func Run() {
 	})
 
 	s.AddHandler(func(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
-		go functions.ProcessMember(s, e.GuildID, e.Member)
+		go util.ProcessMember(s, e.GuildID, e.Member)
 	})
 
 	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		var GuildCommandHandler = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-			"member-roles": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-				roles.HandleMemberRoles(s, i)
-			},
-		}
-		if h, ok := GuildCommandHandler[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
+		if h, ok := commands.GuildCommandHandlers[i.ApplicationCommandData().Name]; ok {
+			if err := h(s, i); err != nil {
+				sentry.CaptureException(err)
+			}
 		}
 	})
 
-	err = s.Open()
-	if err != nil {
-		println(err.Error())
-		panic(err.Error())
-
+	if err := s.Open(); err != nil {
+		log.Fatalf("failed to connect to discord: %v", err)
 	}
+
+	defer func(s *discordgo.Session) {
+		if err := s.Close(); err != nil {
+			log.Fatalf("failed to close discord session: %v", err)
+		}
+	}(s)
+
 	log.Println("Adding commands...")
-	registeredGuildCommands := make([]*discordgo.ApplicationCommand, len(commands.GuildCommands))
-	for i, v := range commands.GuildCommands {
-		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, "", v)
+	for _, v := range commands.GuildCommands {
+		_, err := s.ApplicationCommandCreate(s.State.User.ID, "", v)
 		if err != nil {
 			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
 		}
-		registeredGuildCommands[i] = cmd
 	}
-	defer s.Close()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

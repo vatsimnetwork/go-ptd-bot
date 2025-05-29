@@ -1,9 +1,10 @@
 package bot
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"log"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func IntervalRefreshAll(s *discordgo.Session) {

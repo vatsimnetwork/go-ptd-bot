@@ -1,20 +1,19 @@
 package roles
 
 import (
+	"github.com/vatsimnetwork/go-ptd-bot/internal/util"
+
 	"github.com/bwmarrin/discordgo"
-	"github.com/getsentry/sentry-go"
-	"ptd-discord-bot/functions"
 )
 
-func HandleMemberRoles(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
+func HandleMemberRoles(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	options := i.ApplicationCommandData().Options
 
 	user := options[0].UserValue(s)
 
 	member, _ := s.GuildMember(i.GuildID, user.ID)
 
-	go functions.ProcessMember(s, i.GuildID, member)
+	go util.ProcessMember(s, i.GuildID, member)
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -24,6 +23,8 @@ func HandleMemberRoles(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 	if err != nil {
-		sentry.CaptureException(err)
+		return err
 	}
+
+	return nil
 }

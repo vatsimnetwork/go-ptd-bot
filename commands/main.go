@@ -1,8 +1,12 @@
 package commands
 
 import (
+	"github.com/vatsimnetwork/go-ptd-bot/commands/roles"
+
 	"github.com/bwmarrin/discordgo"
 )
+
+type CommandHandler func(s *discordgo.Session, i *discordgo.InteractionCreate) error
 
 var (
 	AdminPermissions int64 = discordgo.PermissionAdministrator
@@ -20,5 +24,8 @@ var (
 			},
 			DefaultMemberPermissions: &AdminPermissions,
 		},
+	}
+	GuildCommandHandlers = map[string]CommandHandler{
+		"member-roles": roles.HandleMemberRoles,
 	}
 )
