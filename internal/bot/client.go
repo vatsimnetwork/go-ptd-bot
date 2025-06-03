@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/vatsimnetwork/go-ptd-bot/commands"
 	"github.com/vatsimnetwork/go-ptd-bot/internal/config"
@@ -24,6 +25,17 @@ func Session() (*discordgo.Session, error) {
 
 func Run() {
 	log.Print("Starting discord-bot-v2")
+	if config.Env == "production" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:         config.SentryDSN,
+			Debug:       false,
+			Environment: config.Env,
+		})
+		if err != nil {
+			log.Fatalf("sentry.Init: %s", err)
+		}
+		defer sentry.Flush(2 * time.Second)
+	}
 	s, err := Session()
 	if err != nil {
 		sentry.CaptureException(err)
