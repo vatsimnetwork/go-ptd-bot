@@ -31,6 +31,7 @@ var (
 	DiscordToken = os.Getenv("DISCORD_TOKEN")
 	Env          = os.Getenv("GO_ENV")
 	SentryDSN    = os.Getenv("SENTRY_DSN")
+	APIURL       = os.Getenv("API_URL")
 )
 
 func LoadAllServerConfigOrPanic(configPath string) map[string]ServerConfig {

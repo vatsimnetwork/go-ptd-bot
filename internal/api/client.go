@@ -5,13 +5,14 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/carlmjohnson/requests"
+	"github.com/vatsimnetwork/go-ptd-bot/internal/config"
 )
 
 func GetLinkedAccount(m *discordgo.User) (*LinkedAccountResponse, error) {
 	var res *LinkedAccountResponse
 
 	err := requests.
-		URL("https://api.vatsim.net").
+		URL(config.APIURL).
 		Pathf("/v2/members/discord/%s", m.ID).
 		CheckStatus(200).
 		ToJSON(&res).
@@ -32,7 +33,7 @@ func GetMember(u *discordgo.User) (*MemberResponse, error) {
 	}
 
 	err = requests.
-		URL("https://api.vatsim.net").
+		URL(config.APIURL).
 		Pathf("/v2/members/%s", m.UserID).
 		ToJSON(&res).
 		CheckStatus(200).

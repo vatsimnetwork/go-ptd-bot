@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -43,8 +44,6 @@ func Run() {
 	}
 	s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
-	AddMemberHandlers(s)
-
 	s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		go IntervalRefreshAll(s)
 		go config.IntervalReloadConfigs()
@@ -53,6 +52,14 @@ func Run() {
 			sentry.CaptureException(err)
 		}
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
+	})
+
+	s.AddHandler(func(s *discordgo.Session, mc *discordgo.GuildMembersChunk) {
+		for _, member := range mc.Members {
+			fmt.Println("Processing member =", member.User.ID)
+			util.ProcessMember(s, mc.GuildID, member)
+			time.Sleep(45 * time.Millisecond)
+		}
 	})
 
 	s.AddHandler(func(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
