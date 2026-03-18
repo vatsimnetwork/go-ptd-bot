@@ -31,6 +31,7 @@ var (
 	DiscordToken = os.Getenv("DISCORD_TOKEN")
 	Env          = os.Getenv("GO_ENV")
 	SentryDSN    = os.Getenv("SENTRY_DSN")
+	APIURL       = os.Getenv("API_URL")
 )
 
 func LoadAllServerConfigOrPanic(configPath string) map[string]ServerConfig {
@@ -50,7 +51,7 @@ func LoadAllServerConfig(configPath string) (map[string]ServerConfig, error) {
 
 	cfgs := make(map[string]ServerConfig, len(files))
 	for _, f := range files {
-		if !f.IsDir() {
+		if !f.IsDir() && f.Type()&os.ModeSymlink == 0 {
 			cfg, err := LoadServerConfig(fmt.Sprintf("%s/%s", configPath, f.Name()))
 			if err != nil {
 				sentry.CaptureException(err)

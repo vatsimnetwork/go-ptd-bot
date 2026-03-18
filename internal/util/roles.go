@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/vatsimnetwork/go-ptd-bot/internal/api"
@@ -60,8 +59,6 @@ func ProcessMember(s *discordgo.Session, guildID string, m *discordgo.Member) {
 	if reflect.DeepEqual(actualRoles, expectedRoles) {
 		return
 	}
-
-	fmt.Println(actualRoles, expectedRoles)
 
 	roleIDs := new([]string)
 	for k := range expectedRoles {

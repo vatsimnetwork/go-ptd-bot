@@ -11,6 +11,6 @@ func IntervalRefreshAll(s *discordgo.Session) {
 	for {
 		log.Printf("Fetching all guilds")
 		ProcessAllGuilds(s)
-		time.Sleep(time.Hour * 24)
+		time.Sleep(time.Hour * 12)
 	}
 }
