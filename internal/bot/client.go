@@ -1,18 +1,17 @@
 package bot
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
+	"github.com/getsentry/sentry-go"
 	"github.com/vatsimnetwork/go-ptd-bot/commands"
 	"github.com/vatsimnetwork/go-ptd-bot/internal/config"
 	"github.com/vatsimnetwork/go-ptd-bot/internal/util"
-
-	"github.com/bwmarrin/discordgo"
-	"github.com/getsentry/sentry-go"
+	"github.com/vatsimnetwork/go-ptd-bot/utility"
 )
 
 func Session() (*discordgo.Session, error) {
@@ -56,7 +55,6 @@ func Run() {
 
 	s.AddHandler(func(s *discordgo.Session, mc *discordgo.GuildMembersChunk) {
 		for _, member := range mc.Members {
-			fmt.Println("Processing member =", member.User.ID)
 			util.ProcessMember(s, mc.GuildID, member)
 			time.Sleep(45 * time.Millisecond)
 		}
@@ -84,13 +82,7 @@ func Run() {
 		}
 	}(s)
 
-	log.Println("Adding commands...")
-	for _, v := range commands.GuildCommands {
-		_, err := s.ApplicationCommandCreate(s.State.User.ID, "", v)
-		if err != nil {
-			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
-		}
-	}
+	utility.HandleApplicationCommandUpdates(s)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

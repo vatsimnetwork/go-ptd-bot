@@ -32,6 +32,7 @@ var (
 	Env          = os.Getenv("GO_ENV")
 	SentryDSN    = os.Getenv("SENTRY_DSN")
 	APIURL       = os.Getenv("API_URL")
+	MoodleToken  = os.Getenv("MOODLE_KEY")
 )
 
 func LoadAllServerConfigOrPanic(configPath string) map[string]ServerConfig {
