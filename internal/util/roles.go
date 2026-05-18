@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/vatsimnetwork/go-ptd-bot/internal/api"
@@ -56,19 +57,19 @@ func ProcessMember(s *discordgo.Session, guildID string, m *discordgo.Member) {
 		}
 	}
 
-	if reflect.DeepEqual(actualRoles, expectedRoles) {
-		return
+	if !reflect.DeepEqual(actualRoles, expectedRoles) {
+		fmt.Println("Updating roles for ", m.User.ID, " to ", expectedRoles, " from ", actualRoles, "")
+		roleIDs := new([]string)
+		for k := range expectedRoles {
+			*roleIDs = append(*roleIDs, k)
+		}
+
+		_, err = s.GuildMemberEdit(guildID, m.User.ID, &discordgo.GuildMemberParams{
+			Roles: roleIDs,
+		})
+		if err != nil {
+			sentry.CaptureException(err)
+		}
 	}
 
-	roleIDs := new([]string)
-	for k := range expectedRoles {
-		*roleIDs = append(*roleIDs, k)
-	}
-
-	_, err = s.GuildMemberEdit(guildID, m.User.ID, &discordgo.GuildMemberParams{
-		Roles: roleIDs,
-	})
-	if err != nil {
-		sentry.CaptureException(err)
-	}
 }
