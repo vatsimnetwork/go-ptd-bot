@@ -58,7 +58,7 @@ func Run() {
 		for _, member := range mc.Members {
 			fmt.Println("Processing member =", member.User.ID)
 			util.ProcessMember(s, mc.GuildID, member)
-			time.Sleep(45 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 		}
 	})
 
