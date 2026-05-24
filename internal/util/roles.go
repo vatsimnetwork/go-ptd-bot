@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/vatsimnetwork/go-ptd-bot/internal/api"
@@ -16,6 +17,7 @@ func ProcessMember(s *discordgo.Session, guildID string, m *discordgo.Member) {
 	if mem == nil {
 		return
 	} else if err != nil {
+		fmt.Println("Failed to get member ", m.User.ID, " from API")
 		sentry.CaptureException(err)
 		return
 	}
@@ -56,6 +58,8 @@ func ProcessMember(s *discordgo.Session, guildID string, m *discordgo.Member) {
 			expectedRoles[v.RoleID] = struct{}{}
 		}
 	}
+
+	log.Println("Updating roles for ", m.User.ID, " to ", expectedRoles, " from ", actualRoles, "")
 
 	if !reflect.DeepEqual(actualRoles, expectedRoles) {
 		fmt.Println("Updating roles for ", m.User.ID, " to ", expectedRoles, " from ", actualRoles, "")
