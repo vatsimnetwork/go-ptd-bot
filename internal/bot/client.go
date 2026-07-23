@@ -56,7 +56,7 @@ func Run() {
 	s.AddHandler(func(s *discordgo.Session, mc *discordgo.GuildMembersChunk) {
 		for _, member := range mc.Members {
 			util.ProcessMember(s, mc.GuildID, member)
-			time.Sleep(45 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 		}
 	})
 
